@@ -4,6 +4,7 @@ dry_run=false
 verbose=false
 fl=false
 list_of_files=()
+suffix=
 
 # обработка аргументов командной строки
 while [[ $# -gt 0 ]]; do
@@ -37,6 +38,11 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+if [ -z "$suffix" ]; then
+  suffix="$1"
+  shift
+fi
 
 # если остались файлы после -- (если он был), то записываем их в массив
 while [[ $# -gt 0 ]]; do
