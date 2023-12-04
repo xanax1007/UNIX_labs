@@ -83,10 +83,12 @@ if [ ${#directories[@]} -eq 0 ]; then
   directories=(".")
 fi
 
+if [ "$N" -eq 0 ]; then
 for dir in "${directories[@]}"; do
-    count=$(find "$dir" -type f | wc -l)
+    count=$(find -- "$dir" -type f | wc -l)
     N=$((N + count))
 done
+fi
 
 # функция для получения размера файла в человекочитаемом формате
 get_file_size() {
@@ -124,10 +126,9 @@ output_top_files() {
 # пооиск файлов в указанных каталогах с размером больше minsize
 found_files=()
 for dir in "${directories[@]}"; do
-  files_in_dir=$(find "$dir" -type f -size +"$minsize"c)
+  files_in_dir=$(find -- "$dir" -type f -size +"$minsize"c)
   found_files+=($files_in_dir)
 done
 
 # вывод N наибольших файлов
 output_top_files "${found_files[@]}"
-
