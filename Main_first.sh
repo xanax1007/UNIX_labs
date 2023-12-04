@@ -60,6 +60,9 @@ for arg in "$@"; do
       echo "Display detailed help."
       exit 0
       ;;
+    --)
+      break;
+      ;;
     -*)
       if [[ ! "$arg" =~ \. ]] && [ "$arg" != "--" ]; then
         echo "Error. Unsupported option: $arg" >&2
@@ -70,13 +73,17 @@ for arg in "$@"; do
 done
 
 # Цикл для обработки параметров (файлов)
+fl=false
 for file in "$@"; do
+  if [ fl == true ]; then
+    check_and_process_file "$file"
+  else  
   case $file in
-    --*)
-      check_and_process_file "$file"
+    --)
+      fl=true
       ;;
     -*)
-      if [[ "$file" =~ \. ]]; then
+      if [[ "$file" =~ \. ]] || [ "$fl" == true ]; then
         check_and_process_file "$file"
       fi
       ;;
@@ -84,6 +91,7 @@ for file in "$@"; do
       check_and_process_file "$file"
       ;;
   esac
+  fi
 done
 
 # Вывод суммарного размера файлов, если опция -s активирована
@@ -98,4 +106,3 @@ fi
 
 # Завершение сценария с соответствующим кодом возврата
 exit "$exts"
-
