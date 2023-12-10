@@ -1,57 +1,11 @@
 #!/bin/bash
 
-display_sizes=false
-display_total=false
-total_size=0
-exts=0
+show_summary=
+show_only_summary=
+error_flag=
 
-check_and_process_file() {
-  local file="$1"
-
-  # Проверка наличия файла
-  fl=false
-  for arg in *; do
-    if [ "$arg" == "$file" ]; then
-      fl=true
-    fi
-  done
-  
-  if [ "$file" == "--" ]; then
-    return
-  fi
-  
-  if [ "$fl" == false ]; then
-    echo "Error: File not found: $file" >&2
-    exts=1
-    return
-  fi
-
-  # Получение размера файла с использованием stat
-  size=""
-  if [[ "$file" == --* || "$file" == -* ]]; then
-    size=$(stat -c %s "./$file")
-  else
-    size=$(stat -c %s "$file")
-  fi
-
-  # Вывод информации о размере файла, если опция -s активирована
-  if [ "$display_total" != true ]; then
-    echo "$size" "$file"
-  fi
-
-  # Обновление суммарного размера файла
-  total_size=$((total_size + size))
-}
-
-# Цикл для обработки опций
-for arg in "$@"; do
-  case $arg in
-    -s)
-      display_sizes=true
-      ;;
-    -S)
-      display_total=true
-      ;;
+for argument in "$@"; do
+  case $argument in
     --usage)
       echo "$0 [-s] [-S] file1 [file2 ...]"
       exit 0
@@ -61,48 +15,45 @@ for arg in "$@"; do
       exit 0
       ;;
     --)
-      break;
+      break
+      ;;
+    -S)
+      show_only_summary=1
+      ;;
+    -s)
+      show_summary=1
       ;;
     -*)
-      if [[ ! "$arg" =~ \. ]] && [ "$arg" != "--" ]; then
-        echo "Error. Unsupported option: $arg" >&2
-        exit 2
-      fi
+      echo "Error. Unsupported option: $argument" >&2
+      exit 2
       ;;
   esac
 done
 
-# Цикл для обработки параметров (файлов)
-fl=false
+total_size=0
 for file in "$@"; do
-  if [ fl == true ]; then
-    check_and_process_file "$file"
-  else  
-  case $file in
-    --)
-      fl=true
-      ;;
-    -*)
-      if [[ "$file" =~ \. ]] || [ "$fl" == true ]; then
-        check_and_process_file "$file"
+  if [[ "$file" == "--" ]]; then
+    error_flag=1
+    continue
+  fi
+
+  if [[ $error_flag || "${file:0:1}" != "-" ]]; then
+    if [[ ! -e "$file" ]]; then
+      echo "Error: file not found - $file" >&2
+      exit_code=1
+      continue
+    else
+      size=$(stat -c %s -- "$file")
+      if [[ ! $show_only_summary ]]; then
+        echo "$size" "$file"
       fi
-      ;;
-    *)
-      check_and_process_file "$file"
-      ;;
-  esac
+      total_size=$((total_size + size))
+    fi
   fi
 done
 
-# Вывод суммарного размера файлов, если опция -s активирована
-if [ "$display_sizes" == true ] && [ "$display_total" != true ]; then
-  echo "Total: $total_size"
+if [[ $show_summary || $show_only_summary ]]; then
+  echo "Total size: $total_size"
 fi
 
-# Вывод суммарного размера файлов, если опция -S активирована
-if [ "$display_total" == true ]; then
-  echo "$total_size"
-fi
-
-# Завершение сценария с соответствующим кодом возврата
-exit "$exts"
+exit ${exit_code:-0}
